@@ -1,10 +1,11 @@
 from dash import Dash
-from layout import get_layout
+from layout import main_layout
 import callbacks
 
 app = Dash(__name__)
+app.title = "EDA Dashboard"
 
-app.layout = get_layout()
+app.layout = main_layout()
 
 callbacks.register_callbacks(app)
 

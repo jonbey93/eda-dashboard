@@ -1,20 +1,33 @@
 from dash import html, dcc
 
-def get_layout():
+def main_layout():
     return html.Div(style={'padding': '2rem', 'fontFamily': 'Arial'}, children=[
-        html.H2("Dashboard with Dynamic Plot Titles"),
+        html.H1("EDA Dashboard"),
 
+        # Textbox for user input
         html.Div([
-            html.Label("Enter plot title:"),
-            dcc.Input(
-                id='user-input',
-                type='text',
-                placeholder='Type plot title here...',
-                style={'marginLeft': '0.5rem', 'marginBottom': '1rem', 'width': '50%'}
+            dcc.Textarea(id='user-prompt',
+                         placeholder='Ask a question...',
+                         style={'width': '100%', 'height': 100}
             ),
-            html.Div(id='text-output', style={'fontSize': '1.2rem', 'color': 'blue'})
+            html.Button("Run Query", id='run-query', n_clicks=0, style={'marginTop': '1rem'}),
+            html.Div(id='text-output', style={'fontSize': '1.2rem', 'color': 'blue'}),
         ]),
 
+        # Data upload component
+        dcc.Upload(
+        id='upload-data',
+        children=html.Div(['Drag and Drop or ', html.A('Select CSV File')]),
+        style={
+            'width': '100%', 'height': '60px', 'lineHeight': '60px',
+            'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+            'textAlign': 'center', 'margin': '10px'
+        },
+        multiple=False,
+        ),
+        html.Div(id='output-data-upload'),
+
+        # Dropdown for plot type selection
         html.Label("Select plot type:"),
         dcc.Dropdown(
             id='plot-selector',
@@ -28,5 +41,6 @@ def get_layout():
             style={'width': '50%', 'marginBottom': '2rem'}
         ),
 
+        # Container for plots
         html.Div(id='plots-container')
     ])

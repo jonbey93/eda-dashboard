@@ -2,4 +2,5 @@
 .venc/
 __pycache__/
 *.log
+*.csv
 .env
