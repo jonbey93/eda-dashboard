@@ -1,0 +1,4 @@
+# Ignore virtual environment
+.venc/
+__pycache__/
+*.log
