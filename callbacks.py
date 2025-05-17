@@ -1,6 +1,11 @@
 from dash import Input, Output, dcc
 import plotly.express as px
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
+#client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
+
 
 df = pd.DataFrame({
     'x': list(range(1, 11)),
