@@ -7,11 +7,22 @@ from utils.logging import write_to_log
 load_dotenv()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
 
+def clean_llm_code(response: str) -> str:
+    response = response.strip()
+
+    # If it starts and ends with triple quotes, remove them
+    if response.startswith('"""') and response.endswith('"""'):
+        response = response[3:-3].strip()
+
+    # If it’s markdown formatted
+    if response.startswith("```") and response.endswith("```"):
+        response = "\n".join(line for line in response.splitlines()[1:-1])
+
+    return response
 
 def query_llm(user_message,
               columns,
               data_sample):
-    write_to_log(f"data_sample: {data_sample}")
     query = build_query(user_message, columns, data_sample)
     try:
         response = client.chat.completions.create(
@@ -19,7 +30,9 @@ def query_llm(user_message,
             messages=query,
             temperature=1,
         )
-        return response.choices[0].message.content
+        code = clean_llm_code(response.choices[0].message.content)
+        write_to_log(f"LLM_CODE, {code}")
+        return code
     except Exception as e:
         return "(error)" + str(e)
 
@@ -42,22 +55,23 @@ def build_query_DEBUG(user_message, columns, data_sample):
 def build_query(user_message, columns, data_sample):
     priming = f"""
     You are a Python programming assistant.
-    The user has provided a pandas DataFrame named 'df_global'.
+    The user has provided a pandas DataFrame named 'df_global' You can assume that it has been completely cleaned.
     
     The user will provide a message that describes an operation they want to perform on the DataFrame.
-    Your task is to generate Python code that performs the operation and displays the result using plotly.
+    Your task is to generate Python code that performs the operation and displays.
+    ALWAYS use plotly.express or plotly.graph_objects. NEVER use iplot() or cufflinks.
+    The resulting figure varible should always be named 'fig'. Do NOT include fig.show() in the code.
 
     Interpret the following request and return ONLY Python code that performs the operation and displays the result.
-    Do NOT include imports of libraries, such as (pandas as pd, matplotlib.pyplot as plt, plotly.express as px).
+    Do NOT include import statements in the beginning.
 
-    The code should be formatted as a single string, and it should not include any comments or explanations.
+    The code should be formatted as a Python multi-line string.
+    Do NOT include any comments or explanations.
 
-    The provided code should be a complete and valid Python code snippet use the columns labels and data structure below.
-
-    Columns in the DataFrame:
+    Columns in the df_global DataFrame:
     {columns}
 
-    Data sample from the first row in the DataFrame:
+    Data sample from the first row with dtypes:
     {data_sample}
     """
 

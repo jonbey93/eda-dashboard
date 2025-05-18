@@ -1,36 +1,81 @@
-from dash import Input, Output, State, html, dcc
+import uuid
+from dash import no_update, html, dcc
+from dash.dependencies import Input, Output, State
+import matplotlib.pyplot as plt
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from utils.parse import parse_csv
 from utils.llm import query_llm
+from utils.logging import write_to_log
 
 df_global = pd.DataFrame()
 columns_list_global = []
 
-# Sample DataFrame for testing
-df_test = pd.DataFrame({
-        'x': list(range(1, 11)),
-        'y': [2, 5, 1, 6, 9, 4, 7, 3, 8, 10],
-        'category': ['A', 'B'] * 5
-})
-
 def register_callbacks(app):
 
-    # Callback for the LLM-Textarea input
+    # Callback for the user input field
     @app.callback(
+        Output('plots-store', 'data'),
         Output('llm-response', 'value'),
         Input('run-query', 'n_clicks'),
         State('user-prompt', 'value'),
         State('columns-store', 'data'),
         State('data-sample-store', 'data'),
+        State('plots-store', 'data'),
+        prevent_initial_call=True
     )
-    def run_llm_query(n_clicks, user_message, columns, data_sample):
-        if n_clicks > 0 and user_message:
-            response = query_llm(user_message, columns, data_sample)
-            if response:
-                return response
-            else:
-                return "Error: No response from LLM."
+    def run_llm_query(n_clicks,
+                      user_message,
+                      columns,
+                      data_sample,
+                      existing_plots):
+        if not user_message:
+            return no_update, "Error: No user message provided."
+        response = query_llm(user_message, columns, data_sample)
+        if not response:
+            return no_update, "Error: No response from LLM."    
+
+        local_context = {}
+        global_context = {'plt': plt,
+                          'pd': pd,
+                          'px': px,
+                          'go': go,
+                          'df_global': df_global}
+        try:    # Execute the LLM response
+            exec(response, global_context, local_context)
+            fig = local_context.get("fig")
+            if fig is None:
+                return no_update, "Error: LLM did not return a figure." + "\n\nGenerated Code:\n" + response
+            try:    # Convert fig to JSON-serializable dict
+                fig_dict = fig.to_dict()
+                plot_id = str(uuid.uuid4())
+                new_plot = {'id': plot_id,
+                            'figure': fig_dict,
+                            'code': response,
+                            'pinned': False}
+            except Exception as e:
+                return no_update, f"Error: Failed to convert figure to JSON. {str(e)}"
+            return [new_plot] + existing_plots, f"Success! Plot generated. \n\n{response}"
+        except Exception as e:
+            return no_update, f"Execution error: \n\n{str(e)}\n\n{response}"
+
+    # Callback for the plots container
+    @app.callback(
+    Output('plots-container', 'children'),
+    Input('plots-store', 'data')
+    )
+    def render_plots(plots):
+        if not plots:
+            return html.Div("No plots yet.")
+
+        return [
+            html.Div([
+                dcc.Graph(figure=go.Figure(plot['figure']), id=f"plot-{plot['id']}"),
+                html.Button("Pin", id={'type': 'pin-btn', 'index': plot['id']}),
+                html.Hr()
+            ], style={'marginBottom': '20px'}) for plot in plots
+        ]
 
     # Callback for the copy button
     app.clientside_callback(
@@ -95,26 +140,3 @@ def register_callbacks(app):
             html.H5("Registred Features:"),
             html.Ul(columns_list_html)
         ])
-
-    # Callback for the plot type dropdown and user input
-    @app.callback(
-        Output('plots-container', 'children'),
-        Input('plot-selector', 'value'),
-    )
-    def update_plots(plot_type):
-        if plot_type == 'line':
-            main_fig = px.line(df_test, x='x', y='y')
-        elif plot_type == 'bar':
-            main_fig = px.bar(df_test, x='x', y='y')
-        elif plot_type in ['scatter', 'scatter_with_extra']:
-            main_fig = px.scatter(df_test, x='x', y='y', color='category')
-        else:
-            main_fig = {}
-
-        children = [dcc.Graph(figure=main_fig, id='main-graph')]
-
-        if plot_type == 'scatter_with_extra':
-            extra_fig = px.bar(df_test, x='category', y='y')
-            children.append(dcc.Graph(figure=extra_fig, id='extra-graph'))
-
-        return children

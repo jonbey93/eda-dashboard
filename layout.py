@@ -47,20 +47,7 @@ def main_layout():
         dcc.Store(id='columns-store'),
         dcc.Store(id='data-sample-store'),
 
-        # Dropdown for plot type selection
-        html.Label("Select plot type:"),
-        dcc.Dropdown(
-            id='plot-selector',
-            options=[
-                {'label': 'Line Plot', 'value': 'line'},
-                {'label': 'Bar Chart', 'value': 'bar'},
-                {'label': 'Scatter Plot', 'value': 'scatter'},
-                {'label': 'Scatter + Extra Plot', 'value': 'scatter_with_extra'}
-            ],
-            value='line',
-            style={'width': '50%', 'marginBottom': '2rem'}
-        ),
-
         # Container for plots
+        dcc.Store(id='plots-store', data=[]),
         html.Div(id='plots-container')
     ])
