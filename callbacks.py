@@ -1,13 +1,13 @@
 import uuid
 from dash import no_update, html, dcc
 from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from utils.parse import parse_csv
 from utils.llm import query_llm
-from utils.logging import write_to_log
 
 df_global = pd.DataFrame()
 columns_list_global = []
@@ -114,29 +114,85 @@ def register_callbacks(app):
         if contents:
             df_global = parse_csv(contents)
             columns_list_global = df_global.columns.tolist()
-            sample_row = df_global.iloc[0].to_dict()
-            
-            columns_list_html = [html.Li(col) for col in columns_list_global]
-            data_sample = str({
-                col: f"{sample_row[col]}, dtype={df_global[col].dtype}"
-                for col in columns_list_global
-                })
+            sample_row = df_global.iloc[0]
 
-            return columns_list_global, data_sample, html.Div([
-                html.H5("Registred Features:"),
-                html.Ul(columns_list_html)
+            # Prepare data rows for the table: column name and dtype
+            table_rows = []
+            for col in columns_list_global:
+                dtype = df_global[col].dtype
+                table_rows.append(html.Tr([
+                    html.Td(col),
+                    html.Td(str(dtype))
+                ]))
+
+            table = dbc.Table(
+                # Header row
+                [html.Thead(html.Tr([html.Th("Feature"), html.Th("Dtype")]))] +
+                [html.Tbody(table_rows)],
+                bordered=True,
+                hover=True,
+                responsive=True,
+                striped=True,
+                size='sm'
+            )
+
+            return columns_list_global, str(sample_row.to_dict()), html.Div([
+                html.H5("Registered Features:"),
+                table
             ])
-        
-        columns_list_global = ['colA', 'colB', 'colC']
-        data_sample = str({
-            'colA': '2, dtype=int32',
-            'colB': '3, dtype=int32',
-            'colC': '4, dtype=int32'
-        })
-        
-        columns_list_html = [html.Li(col) for col in columns_list_global]
 
-        return columns_list_global, data_sample, html.Div([
-            html.H5("Registred Features:"),
-            html.Ul(columns_list_html)
+        # Default case: show some dummy data as table
+        columns_list_global = ['colA', 'colB', 'colC']
+        dummy_data = {
+            'colA': (2, 'int32'),
+            'colB': (3, 'int32'),
+            'colC': (4, 'int32')
+        }
+
+        table_rows = [html.Tr([html.Td(k), html.Td(v[1])]) for k, v in dummy_data.items()]
+
+        table = dbc.Table(
+            [html.Thead(html.Tr([html.Th("Feature"), html.Th("Dtype")]))] +
+            [html.Tbody(table_rows)],
+            bordered=True,
+            hover=True,
+            responsive=True,
+            striped=True,
+            size='sm'
+        )
+
+        return columns_list_global, str({k: f"{v[0]}, dtype={v[1]}" for k, v in dummy_data.items()}), html.Div([
+            html.H5("Registered Features:"),
+            table
         ])
+    # def update_upload(contents):
+    #     global df_global, columns_list_global
+    #     if contents:
+    #         df_global = parse_csv(contents)
+    #         columns_list_global = df_global.columns.tolist()
+    #         sample_row = df_global.iloc[0].to_dict()
+            
+    #         columns_list_html = [html.Li(col) for col in columns_list_global]
+    #         data_sample = str({
+    #             col: f"{sample_row[col]}, dtype={df_global[col].dtype}"
+    #             for col in columns_list_global
+    #             })
+
+    #         return columns_list_global, data_sample, html.Div([
+    #             html.H5("Registred Features:"),
+    #             html.Ul(columns_list_html)
+    #         ])
+        
+    #     columns_list_global = ['colA', 'colB', 'colC']
+    #     data_sample = str({
+    #         'colA': '2, dtype=int32',
+    #         'colB': '3, dtype=int32',
+    #         'colC': '4, dtype=int32'
+    #     })
+        
+    #     columns_list_html = [html.Li(col) for col in columns_list_global]
+
+    #     return columns_list_global, data_sample, html.Div([
+    #         html.H5("Registred Features:"),
+    #         html.Ul(columns_list_html)
+    #     ])

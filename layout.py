@@ -1,53 +1,79 @@
+import dash_bootstrap_components as dbc
 from dash import html, dcc
-from callbacks import columns_list_global
 
 def main_layout():
-    return html.Div(style={'padding': '2rem', 'fontFamily': 'Arial'}, children=[
-        html.H1("EDA Dashboard"),
+    return dbc.Container(fluid=True, style={'padding': '2rem', 'maxWidth': '1800px'}, children=[
 
-        # Textarea for user input
-        html.Div([
-            dcc.Textarea(id='user-prompt',
-                         placeholder='Ask a question...',
-                         style={'width': '100%', 'height': 100}),
-            html.Button("Run Query",
-                        id='run-query',
-                        n_clicks=0,
-                        style={'marginTop': '1rem'}),
-            html.Div(id='text-output',
-                     style={'fontSize': '1.2rem', 'color': 'blue'}),
+        dbc.Row(dbc.Col(html.H1("EDA Dashboard", className="text-center mb-4"))),
+
+        # User Input Section
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader("Upload CSV Data"),
+                    dbc.CardBody([
+                        dcc.Upload(
+                            id='upload-data',
+                            children=html.Div(['', html.A('Select CSV File')]),
+                            style={
+                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                'textAlign': 'center'
+                            },
+                            multiple=False,
+                        ),
+                        html.Div(id='output-data-upload')
+                    ])
+                ], className='mb-4'),            
+            ], width=2),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader("Ask a Question"),
+                    dbc.CardBody([
+                        dcc.Textarea(id='user-prompt',
+                                    placeholder='Ask a question...',
+                                    style={'width': '100%', 'height': 100}),
+                        dbc.Row([
+                            dbc.Col(dbc.Button("Run Query", id='run-query', color='primary', className='mt-3'), width='auto'),
+                            dbc.Col(dbc.Button("Clear", id='clear-query', color='secondary', className='mt-3'), width='auto'),
+                        ], className='g-2'),
+                        html.Div(id='text-output', className='text-primary mt-3', style={'fontSize': '1.2rem'})
+                    ]),
+                ]),
+
+                dbc.Card([
+                    dbc.CardHeader("LLM Response"),
+                    dbc.CardBody([
+                        dcc.Loading(
+                            id="loading-llm-response",
+                            type="default",  # options: "default", "circle", "dot"
+                            children=[
+                                dcc.Textarea(
+                                    id='llm-response',
+                                    placeholder='LLM response will appear here...',
+                                    style={'width': '100%', 'height': 100},
+                                    readOnly=True
+                                ),
+                                html.Div(id='copy-feedback', className='text-success mt-2')
+                            ]
+                        ),
+                        dbc.Button("Copy to Clipboard", id='copy-button', color='success', className='mt-3'),
+                        html.Div(id='dummy-output', style={'display': 'none'})
+                    ])
+                ], className='mb-4'),
+            ], width=4),
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader("Plots"),
+                    dbc.CardBody(html.Div(id='plots-container'))
+                ], className='mb-4'),
+            ], width=6),
         ]),
 
-        # Textarea for llm response
-        html.Div([
-            dcc.Textarea(id='llm-response',
-                         placeholder='LLM response will appear here...',
-                         style={'width': '100%', 'height': 100},
-                         readOnly=True),
-            html.Button("Copy to Clipboard",
-                        id='copy-button',
-                        n_clicks=0,
-                        style={'marginTop': '1rem'}),
-            html.Div(id='dummy-output', style={'display': 'none'}),
-            html.Div(id='copy-feedback', style={'color': 'green'})
-        ]),
+        # File Upload Section
 
-        # Data upload component
-        dcc.Upload(
-            id='upload-data',
-            children=html.Div(['Drag and Drop or ', html.A('Select CSV File')]),
-            style={
-                'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                'textAlign': 'center', 'margin': '10px'
-            },
-            multiple=False,
-        ),
-        html.Div(id='output-data-upload'),
+
         dcc.Store(id='columns-store'),
         dcc.Store(id='data-sample-store'),
-
-        # Container for plots
         dcc.Store(id='plots-store', data=[]),
-        html.Div(id='plots-container')
     ])

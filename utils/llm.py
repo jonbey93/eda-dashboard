@@ -7,22 +7,22 @@ from utils.logging import write_to_log
 load_dotenv()
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
 
+
 def clean_llm_code(response: str) -> str:
     response = response.strip()
 
-    # If it starts and ends with triple quotes, remove them
+    # If starts and ends with triple quotes
     if response.startswith('"""') and response.endswith('"""'):
         response = response[3:-3].strip()
 
-    # If it’s markdown formatted
+    # If markdown formatted
     if response.startswith("```") and response.endswith("```"):
         response = "\n".join(line for line in response.splitlines()[1:-1])
 
     return response
 
-def query_llm(user_message,
-              columns,
-              data_sample):
+
+def query_llm(user_message, columns, data_sample):
     query = build_query(user_message, columns, data_sample)
     try:
         response = client.chat.completions.create(
@@ -32,9 +32,11 @@ def query_llm(user_message,
         )
         code = clean_llm_code(response.choices[0].message.content)
         write_to_log(f"LLM_CODE, {code}")
+        write_to_log(f"DATA SAMPLE, {data_sample}")
         return code
     except Exception as e:
         return "(error)" + str(e)
+
 
 def build_query_DEBUG(user_message, columns, data_sample):
     priming = f"""
