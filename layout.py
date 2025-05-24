@@ -14,15 +14,18 @@ def main_layout():
                     dbc.CardBody([
                         dcc.Upload(
                             id='upload-data',
-                            children=html.Div(['', html.A('Select CSV File')]),
-                            style={
-                                'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                                'textAlign': 'center'
-                            },
+                            children=html.Div(id='upload-prompt',
+                                style={
+                                'display': 'flex',
+                                'justifyContent': 'center',
+                                'alignItems': 'center',
+                                'height': '100%',  # Ensure full height for centering
+                                'width': '100%',
+                                }),
                             multiple=False,
-                        ),
-                        html.Div(id='output-data-upload')
+                        ), 
+                        html.Div(id='features-table', className='mt-3'),
+                        dcc.Store(id='upload-status'),
                     ])
                 ], className='mb-4'),            
             ], width=2),

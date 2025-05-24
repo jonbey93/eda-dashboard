@@ -102,11 +102,12 @@ def register_callbacks(app):
     def show_copy_feedback(n):
         return "Copied!"
 
-    # Callback for the upload component
+    # Callback for handling data upload, including features table
     @app.callback(
         Output('columns-store', 'data'),
         Output('data-sample-store', 'data'),
-        Output('output-data-upload', 'children'),
+        Output('features-table', 'children'),
+        Output('upload-status', 'data'),
         Input('upload-data', 'contents')
     )
     def update_upload(contents):
@@ -133,20 +134,18 @@ def register_callbacks(app):
                 hover=True,
                 responsive=True,
                 striped=True,
-                size='sm'
+                size='sm',
+                style={'marginTop': '20px'}
             )
 
-            return columns_list_global, str(sample_row.to_dict()), html.Div([
-                html.H5("Registered Features:"),
-                table
-            ])
+            return columns_list_global, str(sample_row.to_dict()), html.Div([table]), True
 
         # Default case: show some dummy data as table
         columns_list_global = ['colA', 'colB', 'colC']
         dummy_data = {
-            'colA': (2, 'int32'),
-            'colB': (3, 'int32'),
-            'colC': (4, 'int32')
+            'A': (2, '--'),
+            'B': (3, '--'),
+            'C': (4, '--')
         }
 
         table_rows = [html.Tr([html.Td(k), html.Td(v[1])]) for k, v in dummy_data.items()]
@@ -158,41 +157,34 @@ def register_callbacks(app):
             hover=True,
             responsive=True,
             striped=True,
-            size='sm'
+            size='sm',
+            style={'marginTop': '20px'}
         )
 
-        return columns_list_global, str({k: f"{v[0]}, dtype={v[1]}" for k, v in dummy_data.items()}), html.Div([
-            html.H5("Registered Features:"),
-            table
-        ])
-    # def update_upload(contents):
-    #     global df_global, columns_list_global
-    #     if contents:
-    #         df_global = parse_csv(contents)
-    #         columns_list_global = df_global.columns.tolist()
-    #         sample_row = df_global.iloc[0].to_dict()
-            
-    #         columns_list_html = [html.Li(col) for col in columns_list_global]
-    #         data_sample = str({
-    #             col: f"{sample_row[col]}, dtype={df_global[col].dtype}"
-    #             for col in columns_list_global
-    #             })
+        data_sample = str({k: f"{v[0]}, dtype={v[1]}" for k, v in dummy_data.items()})
 
-    #         return columns_list_global, data_sample, html.Div([
-    #             html.H5("Registred Features:"),
-    #             html.Ul(columns_list_html)
-    #         ])
-        
-    #     columns_list_global = ['colA', 'colB', 'colC']
-    #     data_sample = str({
-    #         'colA': '2, dtype=int32',
-    #         'colB': '3, dtype=int32',
-    #         'colC': '4, dtype=int32'
-    #     })
-        
-    #     columns_list_html = [html.Li(col) for col in columns_list_global]
+        return columns_list_global, data_sample, html.Div([table]), False
 
-    #     return columns_list_global, data_sample, html.Div([
-    #         html.H5("Registred Features:"),
-    #         html.Ul(columns_list_html)
-    #     ])
+    # Callback for updating upload box style
+    @app.callback(
+    Output('upload-prompt', 'children'),
+    Output('upload-data', 'style'),
+    Input('upload-status', 'data'),
+    State('upload-data', 'filename'),
+    )
+    def update_upload_ui(succes, filename):
+        if succes:
+            return [f'{filename}'], {
+                'width': '100%', 'height': '100px', 'lineHeight': '60px',
+                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                'textAlign': 'center',
+                'backgroundColor': "#def3e3",
+                'color': "#000000",
+                'cursor': 'pointer'
+            }
+        return [html.A('Select CSV File')], {
+        'width': '100%', 'height': '100px', 'lineHeight': '60px',
+        'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+        'textAlign': 'center',
+        'cursor': 'pointer'
+        }
