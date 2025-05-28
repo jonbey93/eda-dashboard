@@ -1,5 +1,5 @@
 import uuid
-from dash import no_update, html, dcc
+from dash import no_update, html, ctx, ALL
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import matplotlib.pyplot as plt
@@ -8,31 +8,31 @@ import plotly.graph_objects as go
 import pandas as pd
 from utils.parse import parse_csv
 from utils.llm import query_llm
+from components import *
 
 df_global = pd.DataFrame()
-columns_list_global = []
 
 def register_callbacks(app):
-
     # Callback for the user input field
     @app.callback(
+        #Output('plots-container', 'children'),
         Output('plots-store', 'data'),
         Output('llm-response', 'value'),
         Input('run-query', 'n_clicks'),
         State('user-prompt', 'value'),
-        State('columns-store', 'data'),
+        State('features-store', 'data'),
         State('data-sample-store', 'data'),
         State('plots-store', 'data'),
-        prevent_initial_call=True
+        prevent_initial_call=True,
     )
     def run_llm_query(n_clicks,
                       user_message,
-                      columns,
+                      features,
                       data_sample,
                       existing_plots):
         if not user_message:
             return no_update, "Error: No user message provided."
-        response = query_llm(user_message, columns, data_sample)
+        response = query_llm(user_message, features, data_sample)
         if not response:
             return no_update, "Error: No response from LLM."    
 
@@ -63,20 +63,13 @@ def register_callbacks(app):
     # Callback for the plots container
     @app.callback(
     Output('plots-container', 'children'),
-    Input('plots-store', 'data')
+    Input('plots-store', 'data'),
     )
     def render_plots(plots):
         if not plots:
             return html.Div("No plots yet.")
-
-        return [
-            html.Div([
-                dcc.Graph(figure=go.Figure(plot['figure']), id=f"plot-{plot['id']}"),
-                html.Button("Pin", id={'type': 'pin-btn', 'index': plot['id']}),
-                html.Hr()
-            ], style={'marginBottom': '20px'}) for plot in plots
-        ]
-
+        return [generate_plot_component(plot) for plot in plots]
+    
     # Callback for the copy button
     app.clientside_callback(
         """
@@ -104,66 +97,26 @@ def register_callbacks(app):
 
     # Callback for handling data upload, including features table
     @app.callback(
-        Output('columns-store', 'data'),
+        Output('features-store', 'data'),
         Output('data-sample-store', 'data'),
         Output('features-table', 'children'),
         Output('upload-status', 'data'),
         Input('upload-data', 'contents')
     )
     def update_upload(contents):
-        global df_global, columns_list_global
+        global df_global, feature_list_global
         if contents:
             df_global = parse_csv(contents)
-            columns_list_global = df_global.columns.tolist()
-            sample_row = df_global.iloc[0]
+            feature_list_global = df_global.columns.tolist()
+            data_sample = str({col: (val, 'dtype: '+str(type(val).__name__)) for col, val in df_global.iloc[0].items()})
+            table = generate_features_table(df_global)
+            return feature_list_global, data_sample, html.Div([table]), True
 
-            # Prepare data rows for the table: column name and dtype
-            table_rows = []
-            for col in columns_list_global:
-                dtype = df_global[col].dtype
-                table_rows.append(html.Tr([
-                    html.Td(col),
-                    html.Td(str(dtype))
-                ]))
-
-            table = dbc.Table(
-                # Header row
-                [html.Thead(html.Tr([html.Th("Feature"), html.Th("Dtype")]))] +
-                [html.Tbody(table_rows)],
-                bordered=True,
-                hover=True,
-                responsive=True,
-                striped=True,
-                size='sm',
-                style={'marginTop': '20px'}
-            )
-
-            return columns_list_global, str(sample_row.to_dict()), html.Div([table]), True
-
-        # Default case: show some dummy data as table
-        columns_list_global = ['colA', 'colB', 'colC']
-        dummy_data = {
-            'A': (2, '--'),
-            'B': (3, '--'),
-            'C': (4, '--')
-        }
-
-        table_rows = [html.Tr([html.Td(k), html.Td(v[1])]) for k, v in dummy_data.items()]
-
-        table = dbc.Table(
-            [html.Thead(html.Tr([html.Th("Feature"), html.Th("Dtype")]))] +
-            [html.Tbody(table_rows)],
-            bordered=True,
-            hover=True,
-            responsive=True,
-            striped=True,
-            size='sm',
-            style={'marginTop': '20px'}
-        )
-
-        data_sample = str({k: f"{v[0]}, dtype={v[1]}" for k, v in dummy_data.items()})
-
-        return columns_list_global, data_sample, html.Div([table]), False
+        df_global = pd.DataFrame([{'A': 2, 'B': 3, 'C': 4}])
+        feature_list_global = df_global.columns.tolist()
+        data_sample = str({col: (val, 'dtype: '+str(type(val).__name__)) for col, val in df_global.iloc[0].items()})
+        table = generate_features_table(df_global)
+        return feature_list_global, data_sample, html.Div([table]), False
 
     # Callback for updating upload box style
     @app.callback(
@@ -176,7 +129,7 @@ def register_callbacks(app):
         if succes:
             return [f'{filename}'], {
                 'width': '100%', 'height': '100px', 'lineHeight': '60px',
-                'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                'borderWidth': '1px', 'borderStyle': 'none', 'borderRadius': '5px',
                 'textAlign': 'center',
                 'backgroundColor': "#def3e3",
                 'color': "#000000",

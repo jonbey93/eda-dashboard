@@ -76,7 +76,7 @@ def main_layout():
         # File Upload Section
 
 
-        dcc.Store(id='columns-store'),
+        dcc.Store(id='features-store'),
         dcc.Store(id='data-sample-store'),
         dcc.Store(id='plots-store', data=[]),
     ])
