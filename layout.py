@@ -38,7 +38,6 @@ def main_layout():
                                     style={'width': '100%', 'height': 100}),
                         dbc.Row([
                             dbc.Col(dbc.Button("Run Query", id='run-query', color='primary', className='mt-3'), width='auto'),
-                            dbc.Col(dbc.Button("Clear", id='clear-query', color='secondary', className='mt-3'), width='auto'),
                         ], className='g-2'),
                         html.Div(id='text-output', className='text-primary mt-3', style={'fontSize': '1.2rem'})
                     ]),
@@ -78,5 +77,6 @@ def main_layout():
 
         dcc.Store(id='features-store'),
         dcc.Store(id='data-sample-store'),
+        dcc.Store(id='llm-plot-store'),
         dcc.Store(id='plots-store', data=[]),
     ])

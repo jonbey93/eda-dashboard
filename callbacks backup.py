@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-from utils.logging import write_to_log
 from utils.parse import parse_csv
 from utils.llm import query_llm
 from components import *
@@ -14,20 +13,23 @@ from components import *
 df_global = pd.DataFrame()
 
 def register_callbacks(app):
-    # LLM interaction
+    # Callback for the user input field
     @app.callback(
-        Output('llm-plot-store', 'data'),
+        #Output('plots-container', 'children'),
+        Output('plots-store', 'data'),
         Output('llm-response', 'value'),
         Input('run-query', 'n_clicks'),
         State('user-prompt', 'value'),
         State('features-store', 'data'),
         State('data-sample-store', 'data'),
+        State('plots-store', 'data'),
         prevent_initial_call=True,
     )
     def run_llm_query(n_clicks,
                       user_message,
                       features,
-                      data_sample):
+                      data_sample,
+                      existing_plots):
         if not user_message:
             return no_update, "Error: No user message provided."
         response = query_llm(user_message, features, data_sample)
@@ -50,35 +52,15 @@ def register_callbacks(app):
                 plot_id = str(uuid.uuid4())
                 new_plot = {'id': plot_id,
                             'figure': fig_dict,
-                            'code': response}
+                            'code': response,
+                            'pinned': False}
             except Exception as e:
                 return no_update, f"Error: Failed to convert figure to JSON. {str(e)}"
-            return new_plot, f"Success! Plot generated. \n\n{response}"
+            return [new_plot] + existing_plots, f"Success! Plot generated. \n\n{response}"
         except Exception as e:
             return no_update, f"Execution error: \n\n{str(e)}\n\n{response}"
 
-    # Plot-store management
-    @app.callback(
-        Output('plots-store', 'data'),
-        Input('llm-plot-store', 'data'),
-        Input({'type': 'clear-btn', 'index': ALL}, 'n_clicks'),
-        #Input({'type': 'view-code-btn', 'index': ALL}, 'n_clicks'),
-        State('plots-store', 'data'),
-        prevent_initial_call=True,
-    )
-    def manage_plots(new_plot, clear_clicks, existing_plots):
-        trigger = ctx.triggered_id
-        # Handle clear button clicks
-        if isinstance(trigger, dict) and trigger['type'] == 'clear-btn':
-            plot_id = trigger['index']
-            updated_plots = [plot for plot in existing_plots if plot['id'] != plot_id]
-            return updated_plots
-
-        if not new_plot:
-            return existing_plots
-        return [new_plot] + existing_plots
-
-    # Plot renderer
+    # Callback for the plots container
     @app.callback(
     Output('plots-container', 'children'),
     Input('plots-store', 'data'),
@@ -86,29 +68,8 @@ def register_callbacks(app):
     def render_plots(plots):
         if not plots:
             return html.Div("No plots yet.")
-        write_to_log(f"{[plot['code'] for plot in plots]}")
         return [generate_plot_component(plot) for plot in plots]
     
-    # View-code-button
-    @app.callback(
-        Output({'type': 'view-code-box-container', 'index': ALL}, 'style'),
-        Input({'type': 'view-code-btn', 'index': ALL}, 'n_clicks'),
-        State({'type': 'view-code-box-container', 'index': ALL}, 'style'),
-        prevent_initial_call=True
-    )
-    def toggle_note_boxes(note_clicks, current_styles):
-        new_styles = []
-        for clicks, style in zip(note_clicks, current_styles):
-            if clicks and clicks % 2 == 1:
-                new_style = style.copy()
-                new_style['display'] = 'block'
-                new_styles.append(new_style)
-            else:
-                new_style = style.copy()
-                new_style['display'] = 'none'
-                new_styles.append(new_style)
-        return new_styles
-
     # Callback for the copy button
     app.clientside_callback(
         """

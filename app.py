@@ -4,7 +4,11 @@ from layout import main_layout
 from utils.logging import setup_logging
 import callbacks
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.SLATE])
+app = Dash(
+    __name__,
+    external_stylesheets=[dbc.themes.SLATE],
+    )
+
 app.title = "EDA Dashboard"
 
 app.layout = main_layout()
