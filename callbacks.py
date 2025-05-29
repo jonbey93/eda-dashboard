@@ -21,7 +21,6 @@ def register_callbacks(app):
     )
     def check_connection(_):
         setup_llm_client()
-        write_to_log(f"OpenAI connect: {is_openai_connected()}")
         return is_openai_connected()
 
     @app.callback(

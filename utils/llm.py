@@ -4,19 +4,29 @@ from dash import html, dcc
 from dotenv import load_dotenv
 from utils.logging import write_to_log
 
+client = None
+openai_connect = False
+
 def setup_llm_client():
+    global client
+    global openai_connect
     load_dotenv()
     api_key = os.environ.get("OPENAI_API_KEY")
-    global client
-    global opanai_connect
+    write_to_log(f"OpenAI API Key: {api_key}")
+    openai_connect = False
     client = None
-    opanai_connect = False
-    if api_key:
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-        opanai_connect = True
+    if not api_key:
+        return
+    try:
+        client = OpenAI(api_key=api_key)
+        client.models.list()
+        openai_connect = True
+    except Exception as e:
+        write_to_log(f"Failed to connect to OpenAI: {e}")
+        openai_connect = False
 
 def is_openai_connected():
-    return opanai_connect
+    return openai_connect
 
 def clean_llm_code(response: str) -> str:
     response = response.strip()
@@ -30,7 +40,6 @@ def clean_llm_code(response: str) -> str:
         response = "\n".join(line for line in response.splitlines()[1:-1])
 
     return response
-
 
 def query_llm(user_message, columns, data_sample):
     query = build_query(user_message, columns, data_sample)
@@ -46,7 +55,6 @@ def query_llm(user_message, columns, data_sample):
         return code
     except Exception as e:
         return "(error)" + str(e)
-
 
 def build_query_DEBUG(user_message, columns, data_sample):
     priming = f"""
