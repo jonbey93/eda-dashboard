@@ -78,6 +78,7 @@ def main_layout():
             ], width=6),
         ]),
 
+        dcc.Interval(id='startup-check', interval=500, n_intervals=0, max_intervals=1),
         dcc.Store(id='openai-connect', data=False),
         dcc.Store(id='features-store'),
         dcc.Store(id='data-sample-store'),

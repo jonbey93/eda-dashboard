@@ -4,13 +4,19 @@ from dash import html, dcc
 from dotenv import load_dotenv
 from utils.logging import write_to_log
 
-load_dotenv()
-api_key = os.environ.get("OPENAI_API_KEY")
-client = None
-opanai_connect = False
-if api_key:
-    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-    openai_connect = True
+def setup_llm_client():
+    load_dotenv()
+    api_key = os.environ.get("OPENAI_API_KEY")
+    global client
+    global opanai_connect
+    client = None
+    opanai_connect = False
+    if api_key:
+        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        opanai_connect = True
+
+def is_openai_connected():
+    return opanai_connect
 
 def clean_llm_code(response: str) -> str:
     response = response.strip()

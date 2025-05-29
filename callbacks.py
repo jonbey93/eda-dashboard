@@ -8,13 +8,22 @@ import plotly.graph_objects as go
 import pandas as pd
 from utils.logging import write_to_log
 from utils.parse import parse_csv
-from utils.llm import query_llm
+from utils.llm import *
 from components import *
 
 df_global = pd.DataFrame()
 
 def register_callbacks(app):
     # LLM interaction
+    @app.callback(
+        Output('openai-connect', 'data'),
+        Input('startup-check', 'n_intervals')
+    )
+    def check_connection(_):
+        setup_llm_client()
+        write_to_log(f"OpenAI connect: {is_openai_connected()}")
+        return is_openai_connected()
+
     @app.callback(
         Output('llm-plot-store', 'data'),
         Output('llm-response', 'value'),
