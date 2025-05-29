@@ -5,8 +5,12 @@ from dotenv import load_dotenv
 from utils.logging import write_to_log
 
 load_dotenv()
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"),)
-
+api_key = os.environ.get("OPENAI_API_KEY")
+client = None
+opanai_connect = False
+if api_key:
+    client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+    openai_connect = True
 
 def clean_llm_code(response: str) -> str:
     response = response.strip()

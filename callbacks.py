@@ -57,6 +57,18 @@ def register_callbacks(app):
         except Exception as e:
             return no_update, f"Execution error: \n\n{str(e)}\n\n{response}"
 
+    @app.callback(
+    Output('user-prompt', 'placeholder'),
+    Output('user-prompt', 'disabled'),
+    Output('run-query', 'disabled'),
+    Output('llm-response', 'disabled'),
+    Input('openai-connect', 'data'),
+    )
+    def toggle_chat_availability(openai_connected):
+        if openai_connected:
+            return 'Ask a question...', False, False, False
+        return '⚠️ OpenAI connection not established.', True, True, True
+
     # Plot-store management
     @app.callback(
         Output('plots-store', 'data'),

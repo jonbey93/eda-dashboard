@@ -19,7 +19,7 @@ def main_layout():
                                 'display': 'flex',
                                 'justifyContent': 'center',
                                 'alignItems': 'center',
-                                'height': '100%',  # Ensure full height for centering
+                                'height': '100%',
                                 'width': '100%',
                                 }),
                             multiple=False,
@@ -33,14 +33,19 @@ def main_layout():
                 dbc.Card([
                     dbc.CardHeader("Ask a Question"),
                     dbc.CardBody([
-                        dcc.Textarea(id='user-prompt',
-                                    placeholder='Ask a question...',
-                                    style={'width': '100%', 'height': 100}),
+                        dcc.Textarea(
+                            id='user-prompt',
+                            style={'width': '100%', 'height': 100},
+                            disabled=True
+                        ),
                         dbc.Row([
-                            dbc.Col(dbc.Button("Run Query", id='run-query', color='primary', className='mt-3'), width='auto'),
+                            dbc.Col(
+                                dbc.Button("Run Query", id='run-query', color='primary', className='mt-3', disabled=True),
+                                width='auto'
+                            ),
                         ], className='g-2'),
                         html.Div(id='text-output', className='text-primary mt-3', style={'fontSize': '1.2rem'})
-                    ]),
+                    ])
                 ]),
 
                 dbc.Card([
@@ -52,9 +57,10 @@ def main_layout():
                             children=[
                                 dcc.Textarea(
                                     id='llm-response',
-                                    placeholder='LLM response will appear here...',
+                                    placeholder='',
                                     style={'width': '100%', 'height': 100},
-                                    readOnly=True
+                                    readOnly=True,
+                                    disabled=True
                                 ),
                                 html.Div(id='copy-feedback', className='text-success mt-2')
                             ]
@@ -72,9 +78,7 @@ def main_layout():
             ], width=6),
         ]),
 
-        # File Upload Section
-
-
+        dcc.Store(id='openai-connect', data=False),
         dcc.Store(id='features-store'),
         dcc.Store(id='data-sample-store'),
         dcc.Store(id='llm-plot-store'),
